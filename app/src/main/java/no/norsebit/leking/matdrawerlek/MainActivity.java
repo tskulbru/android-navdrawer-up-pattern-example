@@ -1,18 +1,15 @@
 package no.norsebit.leking.matdrawerlek;
 
-import android.app.FragmentTransaction;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.os.Build;
 import android.widget.Button;
 
 import com.mikepenz.materialdrawer.Drawer;
@@ -22,6 +19,8 @@ public class MainActivity extends ActionBarActivity implements FragmentManager.O
 
     private Toolbar mToolbar;
     private Drawer.Result mDrawer;
+    private DrawerLayout mDrawerLayout;
+    private ActionBarDrawerToggle mActionBarDrawerToggle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,45 +35,51 @@ public class MainActivity extends ActionBarActivity implements FragmentManager.O
         setSupportActionBar(mToolbar);
 
         mDrawer = new Drawer().withActivity(this).withToolbar(mToolbar).build();
+        mDrawerLayout = mDrawer.getDrawerLayout();
+        mActionBarDrawerToggle = mDrawer.getActionBarDrawerToggle();
 
+        // Add the backstack listener
         getSupportFragmentManager().addOnBackStackChangedListener(this);
-    }
 
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        switch (item.getItemId()) {
-            case android.R.id.home:
+        // Handle clicks on the up arrow since this isnt handled by the
+        mDrawer.getActionBarDrawerToggle().setToolbarNavigationClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 FragmentManager fm = getSupportFragmentManager();
-                if (fm.getBackStackEntryCount() > 0) {
-                    // If "up" navigation is called, we want to follow android navigation pattern
-                    // and up to the "base" which is (in this case) the LoginRegistrationFragment
-                    fm.popBackStack(fm.getBackStackEntryAt(0).getName(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
-                }
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+
+                // Pop the backstack all the way back to the initial fragment. Customize if needed
+                fm.popBackStack(fm.getBackStackEntryAt(0).getName(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            }
+        });
+    }
+
+    /**
+     * Called everytime we add or remove something from the backstack
+     */
+    @Override
+    public void onBackStackChanged() {
+
+        if(getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            mActionBarDrawerToggle.setDrawerIndicatorEnabled(false);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        } else {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+            mActionBarDrawerToggle.setDrawerIndicatorEnabled(true);
+            mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         }
     }
 
+    /**
+     * If you need to move backwards inside the app using the back button, and want to override the
+     * the default behaviour which could take you outside the app before you've popped the entire stack
+     */
     @Override
-    public void onBackStackChanged() {
-        if(getSupportFragmentManager().getBackStackEntryCount() > 0) {
-            mDrawer.getActionBarDrawerToggle().setDrawerIndicatorEnabled(false);
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    public void onBackPressed() {
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStackImmediate();
         } else {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            mDrawer.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
+            super.onBackPressed();
         }
     }
 
@@ -94,7 +99,7 @@ public class MainActivity extends ActionBarActivity implements FragmentManager.O
             btn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    BlankFragment f = BlankFragment.newInstance("asd", "asd2");
+                    BlankFragment f = BlankFragment.newInstance("param1", "param2");
                     android.support.v4.app.FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
                     transaction.replace(R.id.frame_container, f);
                     transaction.addToBackStack("blank");
